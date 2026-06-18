@@ -24,6 +24,14 @@
     "release:major": "./scripts/release.sh major"
   },
   "author": "Hicabi Yilmaz",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/hcbylmz/render-radar.git"
+  },
+  "homepage": "https://github.com/hcbylmz/render-radar#readme",
+  "bugs": {
+    "url": "https://github.com/hcbylmz/render-radar/issues"
+  },
   "keywords": [
     "react-native",
     "performance",
