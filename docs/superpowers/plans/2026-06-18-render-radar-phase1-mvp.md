@@ -524,24 +524,28 @@ Expected: FAIL — "Cannot find module '../useRenderRadar'".
 - [ ] **Step 3: Minimal implementasyon**
 
 `src/api/useRenderRadar.ts`:
+
+> ⚠️ **Düzeltme (uygulama sırasında bulundu):** Hook, `useSyncExternalStore` ile
+> KENDİ sayısına abone OLMAMALI. Abonelik her render'da yeni store kaydını
+> dinler, bu yeniden render üretir, o da `useRenderTracker`'ı tekrar kaydetmeye
+> iter → **sonsuz render döngüsü ve OOM**. Sayıyı yerel `useRef` ile sayıyoruz;
+> store'a yine kaydediyoruz (panel/görsel okusun) ama kendi sayımızı dinlemiyoruz.
+
 ```ts
-import { useEffect } from 'react';
-import { useSyncExternalStore } from 'react';
+import { useEffect, useRef } from 'react';
 import { useRenderTracker } from '../core/useRenderTracker';
-import { renderStore } from '../core/store';
 
 export function useRenderRadar(name: string, options?: { log?: boolean }): number {
-  const id = useRenderTracker(name);
+  // Store'a kaydet (panel/görsel katman okur) — ama store'a abone OLMA.
+  useRenderTracker(name);
 
-  const stat = useSyncExternalStore(
-    (cb) => renderStore.subscribeId(id, cb),
-    () => renderStore.get(id),
-    () => undefined,
-  );
-  const count = stat?.count ?? 0;
+  // Bu render kaçıncı render? Yerel ref ile; store'dan bağımsız.
+  const countRef = useRef(0);
+  countRef.current += 1;
+  const count = countRef.current;
 
   useEffect(() => {
-    if (options?.log && count > 0) {
+    if (options?.log) {
       // eslint-disable-next-line no-console
       console.log(`[render-radar] ${name} rendered ${count}x`);
     }
