@@ -7,7 +7,7 @@
 > **flash + count** every time it re-renders. No Flipper, no native setup, no
 > config. Ships nothing to production.
 
-![demo](./docs/demo.gif)
+![demo](https://raw.githubusercontent.com/hcbylmz/render-radar/main/docs/demo.gif)
 
 ## Why
 
