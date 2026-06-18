@@ -1,6 +1,6 @@
 {
   "name": "render-radar",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Dev-only re-render visualizer for React Native — flash + count every render.",
   "main": "lib/commonjs/index.js",
   "module": "lib/module/index.js",
