@@ -1,6 +1,6 @@
 {
   "name": "render-radar",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "description": "Dev-only re-render visualizer for React Native — flash + count every render.",
   "main": "lib/commonjs/index.js",
   "module": "lib/module/index.js",
@@ -15,8 +15,11 @@
   "scripts": {
     "test": "jest",
     "typecheck": "tsc --noEmit",
-    "build": "bob build"
+    "build": "bob build",
+    "prepare": "bob build",
+    "prepublishOnly": "jest && tsc --noEmit"
   },
+  "author": "Hicabi Yılmaz",
   "keywords": [
     "react-native",
     "performance",
