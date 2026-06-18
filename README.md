@@ -1,5 +1,8 @@
 # render-radar
 
+[![npm version](https://img.shields.io/npm/v/render-radar.svg)](https://www.npmjs.com/package/render-radar)
+[![license](https://img.shields.io/npm/l/render-radar.svg)](./LICENSE)
+
 > Dev-only re-render visualizer for React Native. Wrap a component and watch it
 > **flash + count** every time it re-renders. No Flipper, no native setup, no
 > config. Ships nothing to production.
