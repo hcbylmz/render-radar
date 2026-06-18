@@ -13,24 +13,24 @@ describe('RenderRadar', () => {
     (global as any).__DEV__ = true;
   });
 
-  it('dev modunda children + rozet render eder', () => {
+  it('renders children + badge in dev mode', () => {
     const { getByText, getByTestId } = render(
       <RenderRadar name="Card">
-        <Text>içerik</Text>
+        <Text>content</Text>
       </RenderRadar>,
     );
-    expect(getByText('içerik')).toBeTruthy();
+    expect(getByText('content')).toBeTruthy();
     expect(getByTestId('render-radar-badge')).toBeTruthy();
   });
 
-  it('production modunda yalnızca children render eder (overlay yok)', () => {
+  it('renders only children in production mode (no overlay)', () => {
     (global as any).__DEV__ = false;
     const { getByText, queryByTestId } = render(
       <RenderRadar name="Card">
-        <Text>içerik</Text>
+        <Text>content</Text>
       </RenderRadar>,
     );
-    expect(getByText('içerik')).toBeTruthy();
+    expect(getByText('content')).toBeTruthy();
     expect(queryByTestId('render-radar-badge')).toBeNull();
   });
 });

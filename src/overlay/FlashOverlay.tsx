@@ -7,8 +7,8 @@ type Props = { id: string; color: string };
 export function RadarOverlay({ id, color }: Props): JSX.Element {
   const opacity = useRef(new Animated.Value(0)).current;
 
-  // Store'a abone ol — RadarOverlay'in kendisi izlenmediği için (içinde
-  // useRenderTracker yok) bu yeniden render yeni bir kayıt üretmez: döngü yok.
+  // Subscribe to the store. Because RadarOverlay itself is not tracked (it has
+  // no useRenderTracker), this re-render produces no new record: no loop.
   const stat = useSyncExternalStore(
     (cb) => renderStore.subscribeId(id, cb),
     () => renderStore.get(id),

@@ -1,27 +1,27 @@
-# Render Radar — Faz 1 (MVP) Implementation Plan
+# Render Radar — Phase 1 (MVP) Implementation Plan
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Dev-only bir RN paketi yayınlamak: bir component her render olduğunda kenarını flash'layan + render sayısını gösteren `<RenderRadar>` wrapper'ı ve `useRenderRadar` hook'u.
+**Goal:** Ship a dev-only RN package: a `<RenderRadar>` wrapper and a `useRenderRadar` hook that flash a component's border and show the render count every time the component renders.
 
-**Architecture:** "Tek beyin, üç ağız." Tüm API'ler ortak bir çekirdeği kullanır: `useRenderTracker` her render'ı sayar ve render dışı bir pub/sub store'a (`renderStore`) yazar. Görsel katman (`RadarOverlay`) store'a `useSyncExternalStore` ile abone olur — böylece aracın kendisi izlenen component'i yeniden render etmez (ölçüm kirlenmez). Production'da tüm public API'ler no-op döner.
+**Architecture:** "One brain, three mouths." All APIs use a shared core: `useRenderTracker` counts every render and writes to an off-render pub/sub store (`renderStore`). The visual layer (`RadarOverlay`) subscribes to the store via `useSyncExternalStore` — so the tool itself does not re-render the tracked component (no measurement pollution). In production all public APIs return no-op.
 
-**Tech Stack:** TypeScript, React 18.3, React Native, `react-native-builder-bob` (build), Jest + `@testing-library/react-native` (test). Faz 1'de yalnızca dahili `Animated` API (sıfır zorunlu native bağımlılık).
+**Tech Stack:** TypeScript, React 18.3, React Native, `react-native-builder-bob` (build), Jest + `@testing-library/react-native` (test). In Phase 1, only the built-in `Animated` API (zero mandatory native dependency).
 
 ## Global Constraints
 
-- Paket adı: `render-radar` (npm'de scope'suz, şahsi hesapla yayın).
-- React peer dep tabanı: `react@^18.3` (`useSyncExternalStore` gerekir).
-- Zorunlu native bağımlılık YOK — Faz 1 yalnızca dahili `Animated` kullanır.
-- Production'da tam no-op: `__DEV__` false iken hook hiçbir şey kaydetmez, `<RenderRadar>` yalnızca `children` render eder, ek görsel/overlay çizmez.
-- Ortam kontrolü her zaman `isDev()` fonksiyonu üzerinden (const değil — test edilebilirlik için).
-- Aracın kendi render'ı, izlenen component'in render sayısını ARTIRMAMALI.
-- Tüm public export'lar `src/index.ts` üzerinden.
-- Dil: TypeScript, strict mode.
+- Package name: `render-radar` (unscoped on npm, published from a personal account).
+- React peer dep baseline: `react@^18.3` (`useSyncExternalStore` is required).
+- NO mandatory native dependency — Phase 1 uses only the built-in `Animated`.
+- Full no-op in production: when `__DEV__` is false the hook records nothing, `<RenderRadar>` renders only `children` and draws no extra visuals/overlay.
+- Environment check always goes through the `isDev()` function (not a const — for testability).
+- The tool's own render MUST NOT INCREMENT the render count of the tracked component.
+- All public exports go through `src/index.ts`.
+- Language: TypeScript, strict mode.
 
 ---
 
-### Task 1: Proje iskeleti + yeşil smoke test
+### Task 1: Project skeleton + green smoke test
 
 **Files:**
 - Create: `package.json`
@@ -29,14 +29,14 @@
 - Create: `babel.config.js`
 - Create: `jest.config.js`
 - Create: `jest.setup.js`
-- Create: `.gitignore` (zaten var — doğrula)
+- Create: `.gitignore` (already exists — verify)
 - Test: `src/__tests__/smoke.test.ts`
 
 **Interfaces:**
-- Consumes: (yok)
-- Produces: Çalışan `npm test` ve `npm run build` komutları; `src/` kaynak kökü.
+- Consumes: (none)
+- Produces: working `npm test` and `npm run build` commands; `src/` source root.
 
-- [ ] **Step 1: Bağımlılıkları kur**
+- [ ] **Step 1: Install dependencies**
 
 Run:
 ```bash
@@ -46,11 +46,11 @@ npm i -D typescript@^5.4 react@18.3.1 react-native@0.76.5 react-test-renderer@18
   @types/react@^18.3 @testing-library/react-native@^12.5 jest@^29.7 \
   @react-native/babel-preset@0.76.5 react-native-builder-bob@^0.30 babel-jest@^29.7
 ```
-Expected: kurulum hatasız biter, `node_modules/` oluşur.
+Expected: installation finishes without errors, `node_modules/` is created.
 
-- [ ] **Step 2: `package.json` alanlarını ayarla**
+- [ ] **Step 2: Set up `package.json` fields**
 
-`package.json` içindeki ilgili alanları şu şekilde düzenle (mevcut `scripts`/`name` üzerine yaz):
+Edit the relevant fields in `package.json` as follows (overwrite the existing `scripts`/`name`):
 ```json
 {
   "name": "render-radar",
@@ -81,7 +81,7 @@ Expected: kurulum hatasız biter, `node_modules/` oluşur.
 }
 ```
 
-- [ ] **Step 3: Config dosyalarını yaz**
+- [ ] **Step 3: Write the config files**
 
 `tsconfig.json`:
 ```json
@@ -120,52 +120,52 @@ module.exports = {
 
 `jest.setup.js`:
 ```js
-// react-native preset, varsayılan olarak global.__DEV__ = true tanımlar.
-// Production no-op testleri tek tek global.__DEV__ değerini değiştirir.
+// The react-native preset defines global.__DEV__ = true by default.
+// Production no-op tests individually change the value of global.__DEV__.
 ```
 
-- [ ] **Step 4: Yeşil smoke testi yaz**
+- [ ] **Step 4: Write a green smoke test**
 
 `src/__tests__/smoke.test.ts`:
 ```ts
 describe('toolchain', () => {
-  it('jest çalışıyor', () => {
+  it('jest is running', () => {
     expect(1 + 1).toBe(2);
   });
 });
 ```
 
-- [ ] **Step 5: Testi çalıştır**
+- [ ] **Step 5: Run the test**
 
 Run: `npm test`
 Expected: PASS — 1 passed.
 
-- [ ] **Step 6: Build'i doğrula**
+- [ ] **Step 6: Verify the build**
 
-Geçici bir `src/index.ts` oluştur: `export const VERSION = '0.0.0';`
+Create a temporary `src/index.ts`: `export const VERSION = '0.0.0';`
 Run: `npm run build`
-Expected: `lib/commonjs`, `lib/module`, `lib/typescript` klasörleri oluşur, hata yok.
+Expected: `lib/commonjs`, `lib/module`, `lib/typescript` folders are created, no errors.
 
 - [ ] **Step 7: Commit**
 
 ```bash
 git add -A
-git commit -m "chore: proje iskeleti, jest + builder-bob yapılandırması"
+git commit -m "chore: project skeleton, jest + builder-bob configuration"
 ```
 
 ---
 
-### Task 2: `isDev()` ortam kapısı
+### Task 2: `isDev()` environment gate
 
 **Files:**
 - Create: `src/core/isDev.ts`
 - Test: `src/core/__tests__/isDev.test.ts`
 
 **Interfaces:**
-- Consumes: (yok)
+- Consumes: (none)
 - Produces: `export function isDev(): boolean`
 
-- [ ] **Step 1: Başarısız testi yaz**
+- [ ] **Step 1: Write the failing test**
 
 `src/core/__tests__/isDev.test.ts`:
 ```ts
@@ -176,24 +176,24 @@ describe('isDev', () => {
     (global as any).__DEV__ = true;
   });
 
-  it('__DEV__ true iken true döner', () => {
+  it('returns true when __DEV__ is true', () => {
     (global as any).__DEV__ = true;
     expect(isDev()).toBe(true);
   });
 
-  it('__DEV__ false iken false döner', () => {
+  it('returns false when __DEV__ is false', () => {
     (global as any).__DEV__ = false;
     expect(isDev()).toBe(false);
   });
 });
 ```
 
-- [ ] **Step 2: Testi çalıştır, başarısız olduğunu gör**
+- [ ] **Step 2: Run the test, watch it fail**
 
 Run: `npm test -- isDev`
 Expected: FAIL — "Cannot find module '../isDev'".
 
-- [ ] **Step 3: Minimal implementasyon**
+- [ ] **Step 3: Minimal implementation**
 
 `src/core/isDev.ts`:
 ```ts
@@ -205,7 +205,7 @@ export function isDev(): boolean {
 }
 ```
 
-- [ ] **Step 4: Testi çalıştır, geçtiğini gör**
+- [ ] **Step 4: Run the test, watch it pass**
 
 Run: `npm test -- isDev`
 Expected: PASS — 2 passed.
@@ -214,38 +214,38 @@ Expected: PASS — 2 passed.
 
 ```bash
 git add src/core/isDev.ts src/core/__tests__/isDev.test.ts
-git commit -m "feat: isDev ortam kapısı"
+git commit -m "feat: isDev environment gate"
 ```
 
 ---
 
-### Task 3: `renderStore` — render dışı pub/sub store
+### Task 3: `renderStore` — off-render pub/sub store
 
 **Files:**
 - Create: `src/core/store.ts`
 - Test: `src/core/__tests__/store.test.ts`
 
 **Interfaces:**
-- Consumes: (yok)
+- Consumes: (none)
 - Produces:
   - `export type RenderStat = { id: string; name: string; count: number; lastRenderAt: number }`
-  - `export class RenderStore` — metodlar: `record(id: string, name: string, now: number): RenderStat`, `get(id: string): RenderStat | undefined`, `getAll(): RenderStat[]`, `reset(): void`, `subscribe(listener: () => void): () => void`, `subscribeId(id: string, listener: () => void): () => void`
+  - `export class RenderStore` — methods: `record(id: string, name: string, now: number): RenderStat`, `get(id: string): RenderStat | undefined`, `getAll(): RenderStat[]`, `reset(): void`, `subscribe(listener: () => void): () => void`, `subscribeId(id: string, listener: () => void): () => void`
   - `export const renderStore: RenderStore`
 
-- [ ] **Step 1: Başarısız testi yaz**
+- [ ] **Step 1: Write the failing test**
 
 `src/core/__tests__/store.test.ts`:
 ```ts
 import { RenderStore } from '../store';
 
 describe('RenderStore', () => {
-  it('record her çağrıda count artırır', () => {
+  it('record increments count on each call', () => {
     const s = new RenderStore();
     expect(s.record('a', 'A', 1).count).toBe(1);
     expect(s.record('a', 'A', 2).count).toBe(2);
   });
 
-  it('farklı idleri bağımsız sayar', () => {
+  it('counts different ids independently', () => {
     const s = new RenderStore();
     s.record('a', 'A', 1);
     s.record('b', 'B', 1);
@@ -254,14 +254,14 @@ describe('RenderStore', () => {
     expect(s.getAll()).toHaveLength(2);
   });
 
-  it('reset tüm statları temizler', () => {
+  it('reset clears all stats', () => {
     const s = new RenderStore();
     s.record('a', 'A', 1);
     s.reset();
     expect(s.getAll()).toHaveLength(0);
   });
 
-  it('subscribeId yalnızca ilgili id değişince tetiklenir', () => {
+  it('subscribeId fires only when the relevant id changes', () => {
     const s = new RenderStore();
     const calls: string[] = [];
     s.subscribeId('a', () => calls.push('a'));
@@ -271,7 +271,7 @@ describe('RenderStore', () => {
     expect(calls).toEqual(['a']);
   });
 
-  it('subscribe her kayıtta tetiklenir ve unsubscribe çalışır', () => {
+  it('subscribe fires on every record and unsubscribe works', () => {
     const s = new RenderStore();
     let n = 0;
     const unsub = s.subscribe(() => { n += 1; });
@@ -284,12 +284,12 @@ describe('RenderStore', () => {
 });
 ```
 
-- [ ] **Step 2: Testi çalıştır, başarısız olduğunu gör**
+- [ ] **Step 2: Run the test, watch it fail**
 
 Run: `npm test -- store`
 Expected: FAIL — "Cannot find module '../store'".
 
-- [ ] **Step 3: Minimal implementasyon**
+- [ ] **Step 3: Minimal implementation**
 
 `src/core/store.ts`:
 ```ts
@@ -362,7 +362,7 @@ export class RenderStore {
 export const renderStore = new RenderStore();
 ```
 
-- [ ] **Step 4: Testi çalıştır, geçtiğini gör**
+- [ ] **Step 4: Run the test, watch it pass**
 
 Run: `npm test -- store`
 Expected: PASS — 5 passed.
@@ -376,7 +376,7 @@ git commit -m "feat: renderStore pub/sub store"
 
 ---
 
-### Task 4: `useRenderTracker` — sayım hook'u
+### Task 4: `useRenderTracker` — counting hook
 
 **Files:**
 - Create: `src/core/useRenderTracker.ts`
@@ -384,9 +384,9 @@ git commit -m "feat: renderStore pub/sub store"
 
 **Interfaces:**
 - Consumes: `isDev()` (Task 2), `renderStore` (Task 3)
-- Produces: `export function useRenderTracker(name: string): string` — kararlı bir instance id döner; her commit sonrası `renderStore.record` çağırır. Production'da kayıt yapmaz.
+- Produces: `export function useRenderTracker(name: string): string` — returns a stable instance id; calls `renderStore.record` after every commit. Records nothing in production.
 
-- [ ] **Step 1: Başarısız testi yaz**
+- [ ] **Step 1: Write the failing test**
 
 `src/core/__tests__/useRenderTracker.test.tsx`:
 ```tsx
@@ -407,14 +407,14 @@ describe('useRenderTracker', () => {
     (global as any).__DEV__ = true;
   });
 
-  it('her render için count artırır', () => {
+  it('increments count for each render', () => {
     const { rerender } = render(<Probe value={1} />);
     expect(renderStore.getAll()[0]?.count).toBe(1);
     rerender(<Probe value={2} />);
     expect(renderStore.getAll()[0]?.count).toBe(2);
   });
 
-  it('production modunda hiçbir şey kaydetmez', () => {
+  it('records nothing in production mode', () => {
     (global as any).__DEV__ = false;
     render(<Probe value={1} />);
     expect(renderStore.getAll()).toHaveLength(0);
@@ -422,12 +422,12 @@ describe('useRenderTracker', () => {
 });
 ```
 
-- [ ] **Step 2: Testi çalıştır, başarısız olduğunu gör**
+- [ ] **Step 2: Run the test, watch it fail**
 
 Run: `npm test -- useRenderTracker`
 Expected: FAIL — "Cannot find module '../useRenderTracker'".
 
-- [ ] **Step 3: Minimal implementasyon**
+- [ ] **Step 3: Minimal implementation**
 
 `src/core/useRenderTracker.ts`:
 ```ts
@@ -445,8 +445,8 @@ export function useRenderTracker(name: string): string {
   }
   const id = idRef.current;
 
-  // Render'ı commit SONRASI kaydet — render sırasında store'u mutasyona uğratma.
-  // Bağımlılık dizisi yok: her commit sonrası çalışır.
+  // Record the render AFTER commit — do not mutate the store during render.
+  // No dependency array: runs after every commit.
   useEffect(() => {
     if (!isDev()) return;
     renderStore.record(id, name, Date.now());
@@ -456,7 +456,7 @@ export function useRenderTracker(name: string): string {
 }
 ```
 
-- [ ] **Step 4: Testi çalıştır, geçtiğini gör**
+- [ ] **Step 4: Run the test, watch it pass**
 
 Run: `npm test -- useRenderTracker`
 Expected: PASS — 2 passed.
@@ -465,7 +465,7 @@ Expected: PASS — 2 passed.
 
 ```bash
 git add src/core/useRenderTracker.ts src/core/__tests__/useRenderTracker.test.tsx
-git commit -m "feat: useRenderTracker sayım hooku"
+git commit -m "feat: useRenderTracker counting hook"
 ```
 
 ---
@@ -478,9 +478,9 @@ git commit -m "feat: useRenderTracker sayım hooku"
 
 **Interfaces:**
 - Consumes: `useRenderTracker` (Task 4), `renderStore` (Task 3), `isDev()` (Task 2)
-- Produces: `export function useRenderRadar(name: string, options?: { log?: boolean }): number` — güncel render sayısını döner; `options.log` true ise her render'da `console.log` ile loglar.
+- Produces: `export function useRenderRadar(name: string, options?: { log?: boolean }): number` — returns the current render count; if `options.log` is true, logs via `console.log` on every render.
 
-- [ ] **Step 1: Başarısız testi yaz**
+- [ ] **Step 1: Write the failing test**
 
 `src/api/__tests__/useRenderRadar.test.tsx`:
 ```tsx
@@ -501,14 +501,14 @@ describe('useRenderRadar', () => {
     (global as any).__DEV__ = true;
   });
 
-  it('render sayısını döner ve store günceller', () => {
+  it('returns the render count and updates the store', () => {
     const { getByTestId, rerender } = render(<Counter value={1} />);
     expect(getByTestId('count').props.children).toBe(1);
     rerender(<Counter value={2} />);
     expect(getByTestId('count').props.children).toBe(2);
   });
 
-  it('production modunda store boş kalır', () => {
+  it('the store stays empty in production mode', () => {
     (global as any).__DEV__ = false;
     render(<Counter value={1} />);
     expect(renderStore.getAll()).toHaveLength(0);
@@ -516,30 +516,31 @@ describe('useRenderRadar', () => {
 });
 ```
 
-- [ ] **Step 2: Testi çalıştır, başarısız olduğunu gör**
+- [ ] **Step 2: Run the test, watch it fail**
 
 Run: `npm test -- useRenderRadar`
 Expected: FAIL — "Cannot find module '../useRenderRadar'".
 
-- [ ] **Step 3: Minimal implementasyon**
+- [ ] **Step 3: Minimal implementation**
 
 `src/api/useRenderRadar.ts`:
 
-> ⚠️ **Düzeltme (uygulama sırasında bulundu):** Hook, `useSyncExternalStore` ile
-> KENDİ sayısına abone OLMAMALI. Abonelik her render'da yeni store kaydını
-> dinler, bu yeniden render üretir, o da `useRenderTracker`'ı tekrar kaydetmeye
-> iter → **sonsuz render döngüsü ve OOM**. Sayıyı yerel `useRef` ile sayıyoruz;
-> store'a yine kaydediyoruz (panel/görsel okusun) ama kendi sayımızı dinlemiyoruz.
+> ⚠️ **Fix (found during implementation):** The hook MUST NOT subscribe to its
+> OWN count via `useSyncExternalStore`. The subscription listens for a new store
+> record on every render, which produces a re-render, which in turn pushes
+> `useRenderTracker` to record again → **infinite render loop and OOM**. We count
+> the count with a local `useRef`; we still record to the store (so the
+> panel/visual layer can read it) but we do not listen to our own count.
 
 ```ts
 import { useEffect, useRef } from 'react';
 import { useRenderTracker } from '../core/useRenderTracker';
 
 export function useRenderRadar(name: string, options?: { log?: boolean }): number {
-  // Store'a kaydet (panel/görsel katman okur) — ama store'a abone OLMA.
+  // Record to the store (the panel/visual layer reads it) — but do NOT subscribe to the store.
   useRenderTracker(name);
 
-  // Bu render kaçıncı render? Yerel ref ile; store'dan bağımsız.
+  // Which render number is this? With a local ref; independent of the store.
   const countRef = useRef(0);
   countRef.current += 1;
   const count = countRef.current;
@@ -555,7 +556,7 @@ export function useRenderRadar(name: string, options?: { log?: boolean }): numbe
 }
 ```
 
-- [ ] **Step 4: Testi çalıştır, geçtiğini gör**
+- [ ] **Step 4: Run the test, watch it pass**
 
 Run: `npm test -- useRenderRadar`
 Expected: PASS — 2 passed.
@@ -569,7 +570,7 @@ git commit -m "feat: useRenderRadar public hook"
 
 ---
 
-### Task 6: `RadarOverlay` — flash kenarı + sayaç rozeti
+### Task 6: `RadarOverlay` — flash border + counter badge
 
 **Files:**
 - Create: `src/overlay/FlashOverlay.tsx`
@@ -577,9 +578,9 @@ git commit -m "feat: useRenderRadar public hook"
 
 **Interfaces:**
 - Consumes: `renderStore` (Task 3)
-- Produces: `export function RadarOverlay(props: { id: string; color: string }): JSX.Element` — store'a `subscribeId` ile abone olur, count değişince flash animasyonu oynatır, `testID="render-radar-badge"` olan bir sayaç rozeti gösterir. Store'a abone olur ama hiçbir render sayacını ARTIRMAZ (kendisi izlenmez).
+- Produces: `export function RadarOverlay(props: { id: string; color: string }): JSX.Element` — subscribes to the store via `subscribeId`, plays a flash animation when count changes, and shows a counter badge with `testID="render-radar-badge"`. It subscribes to the store but does NOT INCREMENT any render counter (it is not itself tracked).
 
-- [ ] **Step 1: Başarısız testi yaz**
+- [ ] **Step 1: Write the failing test**
 
 `src/overlay/__tests__/FlashOverlay.test.tsx`:
 ```tsx
@@ -591,25 +592,25 @@ import { renderStore } from '../../core/store';
 describe('RadarOverlay', () => {
   beforeEach(() => { renderStore.reset(); });
 
-  it('store sayacını rozette gösterir', () => {
+  it('shows the store counter in the badge', () => {
     renderStore.record('X#1', 'X', 1);
     const { getByTestId } = render(<RadarOverlay id="X#1" color="#ff0000" />);
     expect(getByTestId('render-radar-badge').props.children).toBe(1);
   });
 
-  it('id için stat yoksa 0 gösterir', () => {
+  it('shows 0 when there is no stat for the id', () => {
     const { getByTestId } = render(<RadarOverlay id="missing" color="#ff0000" />);
     expect(getByTestId('render-radar-badge').props.children).toBe(0);
   });
 });
 ```
 
-- [ ] **Step 2: Testi çalıştır, başarısız olduğunu gör**
+- [ ] **Step 2: Run the test, watch it fail**
 
 Run: `npm test -- FlashOverlay`
 Expected: FAIL — "Cannot find module '../FlashOverlay'".
 
-- [ ] **Step 3: Minimal implementasyon**
+- [ ] **Step 3: Minimal implementation**
 
 `src/overlay/FlashOverlay.tsx`:
 ```tsx
@@ -681,7 +682,7 @@ const styles = StyleSheet.create({
 });
 ```
 
-- [ ] **Step 4: Testi çalıştır, geçtiğini gör**
+- [ ] **Step 4: Run the test, watch it pass**
 
 Run: `npm test -- FlashOverlay`
 Expected: PASS — 2 passed.
@@ -690,16 +691,16 @@ Expected: PASS — 2 passed.
 
 ```bash
 git add src/overlay/FlashOverlay.tsx src/overlay/__tests__/FlashOverlay.test.tsx
-git commit -m "feat: RadarOverlay flash kenarı + sayaç rozeti"
+git commit -m "feat: RadarOverlay flash border + counter badge"
 ```
 
 ---
 
-### Task 7: `<RenderRadar>` wrapper + public export'lar
+### Task 7: `<RenderRadar>` wrapper + public exports
 
 **Files:**
 - Create: `src/api/RenderRadar.tsx`
-- Create: `src/index.ts` (Task 1'deki geçici içeriği değiştir)
+- Create: `src/index.ts` (replace the temporary content from Task 1)
 - Test: `src/api/__tests__/RenderRadar.test.tsx`
 
 **Interfaces:**
@@ -707,9 +708,9 @@ git commit -m "feat: RadarOverlay flash kenarı + sayaç rozeti"
 - Produces:
   - `export type RenderRadarProps = { name: string; color?: string; children: React.ReactNode }`
   - `export function RenderRadar(props: RenderRadarProps): JSX.Element`
-  - `src/index.ts` tüm public yüzeyi dışa aktarır: `RenderRadar`, `RenderRadarProps`, `useRenderRadar`, `renderStore`, `RenderStat`.
+  - `src/index.ts` exports the entire public surface: `RenderRadar`, `RenderRadarProps`, `useRenderRadar`, `renderStore`, `RenderStat`.
 
-- [ ] **Step 1: Başarısız testi yaz**
+- [ ] **Step 1: Write the failing test**
 
 `src/api/__tests__/RenderRadar.test.tsx`:
 ```tsx
@@ -728,35 +729,35 @@ describe('RenderRadar', () => {
     (global as any).__DEV__ = true;
   });
 
-  it('dev modunda children + rozet render eder', () => {
+  it('renders children + badge in dev mode', () => {
     const { getByText, getByTestId } = render(
       <RenderRadar name="Card">
-        <Text>içerik</Text>
+        <Text>content</Text>
       </RenderRadar>,
     );
-    expect(getByText('içerik')).toBeTruthy();
+    expect(getByText('content')).toBeTruthy();
     expect(getByTestId('render-radar-badge')).toBeTruthy();
   });
 
-  it('production modunda yalnızca children render eder (overlay yok)', () => {
+  it('renders only children in production mode (no overlay)', () => {
     (global as any).__DEV__ = false;
     const { getByText, queryByTestId } = render(
       <RenderRadar name="Card">
-        <Text>içerik</Text>
+        <Text>content</Text>
       </RenderRadar>,
     );
-    expect(getByText('içerik')).toBeTruthy();
+    expect(getByText('content')).toBeTruthy();
     expect(queryByTestId('render-radar-badge')).toBeNull();
   });
 });
 ```
 
-- [ ] **Step 2: Testi çalıştır, başarısız olduğunu gör**
+- [ ] **Step 2: Run the test, watch it fail**
 
 Run: `npm test -- RenderRadar`
 Expected: FAIL — "Cannot find module '../RenderRadar'".
 
-- [ ] **Step 3: Minimal implementasyon**
+- [ ] **Step 3: Minimal implementation**
 
 `src/api/RenderRadar.tsx`:
 ```tsx
@@ -773,7 +774,7 @@ export type RenderRadarProps = {
 };
 
 export function RenderRadar({ name, color = '#ff3b30', children }: RenderRadarProps): JSX.Element {
-  // isDev() uygulama ömrü boyunca sabittir; bu dallanma hook sırasını bozmaz.
+  // isDev() is constant for the lifetime of the app; this branch does not break hook order.
   if (!isDev()) {
     return <>{children}</>;
   }
@@ -809,7 +810,7 @@ const styles = StyleSheet.create({
 });
 ```
 
-`src/index.ts` (geçici içeriği değiştir):
+`src/index.ts` (replace the temporary content):
 ```ts
 export { RenderRadar } from './api/RenderRadar';
 export type { RenderRadarProps } from './api/RenderRadar';
@@ -818,38 +819,38 @@ export { renderStore } from './core/store';
 export type { RenderStat } from './core/store';
 ```
 
-- [ ] **Step 4: Testleri çalıştır, geçtiğini gör**
+- [ ] **Step 4: Run the tests, watch them pass**
 
 Run: `npm test`
-Expected: PASS — tüm test dosyaları yeşil.
+Expected: PASS — all test files green.
 
-- [ ] **Step 5: Typecheck + build doğrula**
+- [ ] **Step 5: Verify typecheck + build**
 
 Run: `npm run typecheck && npm run build`
-Expected: Hata yok; `lib/typescript/src/index.d.ts` `RenderRadar` ve `useRenderRadar` tiplerini içerir.
+Expected: No errors; `lib/typescript/src/index.d.ts` contains the `RenderRadar` and `useRenderRadar` types.
 
 - [ ] **Step 6: Commit**
 
 ```bash
 git add src/api/RenderRadar.tsx src/index.ts src/api/__tests__/RenderRadar.test.tsx
-git commit -m "feat: RenderRadar wrapper + public exportlar"
+git commit -m "feat: RenderRadar wrapper + public exports"
 ```
 
 ---
 
-### Task 8: README + minimal Expo örnek app (manuel/görsel doğrulama)
+### Task 8: README + minimal Expo example app (manual/visual verification)
 
 **Files:**
 - Create: `README.md`
 - Create: `example/App.tsx`
 - Create: `example/package.json`
-- Test: (manuel — Argent ile simülatörde görsel doğrulama)
+- Test: (manual — visual verification in the simulator via Argent)
 
 **Interfaces:**
-- Consumes: `RenderRadar`, `useRenderRadar` (paket public API)
-- Produces: README (kurulum + kullanım + GIF yer tutucusu) ve çalıştırılabilir bir Expo ekranı.
+- Consumes: `RenderRadar`, `useRenderRadar` (package public API)
+- Produces: README (install + usage + GIF placeholder) and a runnable Expo screen.
 
-- [ ] **Step 1: README yaz**
+- [ ] **Step 1: Write the README**
 
 `README.md`:
 ```markdown
@@ -868,7 +869,7 @@ npm i -D render-radar
 
 ## Usage
 
-### Wrapper (görsel: flash + sayaç)
+### Wrapper (visual: flash + counter)
 
 ```tsx
 import { RenderRadar } from 'render-radar';
@@ -878,7 +879,7 @@ import { RenderRadar } from 'render-radar';
 </RenderRadar>
 ```
 
-### Hook (sayacı kendin kullan)
+### Hook (use the counter yourself)
 
 ```tsx
 import { useRenderRadar } from 'render-radar';
@@ -889,20 +890,20 @@ function ProductCard(props) {
 }
 ```
 
-Production build'de (`__DEV__ === false`) tüm API'ler no-op'tur — ek render,
-overlay veya log üretmez.
+In a production build (`__DEV__ === false`) all APIs are no-ops — they produce no
+extra render, overlay, or log.
 
 ## API
 
-- `<RenderRadar name color?>` — children'ı sarar, render'da flash + sayaç gösterir.
-- `useRenderRadar(name, { log? })` — güncel render sayısını döner.
+- `<RenderRadar name color?>` — wraps the children, shows flash + counter on render.
+- `useRenderRadar(name, { log? })` — returns the current render count.
 
 ## License
 
 MIT
 ```
 
-- [ ] **Step 2: Minimal Expo örnek app oluştur**
+- [ ] **Step 2: Create a minimal Expo example app**
 
 Run:
 ```bash
@@ -911,11 +912,11 @@ npx create-expo-app@latest example --template blank-typescript
 cd example
 npm i
 ```
-Expected: `example/` altında çalışan bir Expo projesi.
+Expected: a working Expo project under `example/`.
 
-- [ ] **Step 3: Örnek ekranı yaz**
+- [ ] **Step 3: Write the example screen**
 
-`example/App.tsx` içeriğini şununla değiştir:
+Replace the content of `example/App.tsx` with the following:
 ```tsx
 import React, { useState } from 'react';
 import { Button, SafeAreaView, Text, View } from 'react-native';
@@ -933,51 +934,52 @@ export default function App() {
   const [n, setN] = useState(0);
   return (
     <SafeAreaView style={{ flex: 1, justifyContent: 'center' }}>
-      <Text style={{ textAlign: 'center' }}>Sayaç: {n}</Text>
-      <Button title="Render tetikle" onPress={() => setN((x) => x + 1)} />
+      <Text style={{ textAlign: 'center' }}>Counter: {n}</Text>
+      <Button title="Trigger render" onPress={() => setN((x) => x + 1)} />
       <RenderRadar name="Box">
-        <Box label="Bu kutu her render'da flash'lar" />
+        <Box label="This box flashes on every render" />
       </RenderRadar>
     </SafeAreaView>
   );
 }
 ```
 
-Not: `metro.config.js` ile `example`'ın bir üst klasördeki `src`'yi çözebilmesi
-için watchFolders ayarı gerekebilir. En basit yol: örnek için `import { RenderRadar } from '../src'`
-yerine paketi yerelden bağlamak (`npm pack` + kur) veya metro `watchFolders: [path.resolve(__dirname, '..')]`.
+Note: a watchFolders setting in `metro.config.js` may be needed so that `example`
+can resolve the `src` in the parent folder. The simplest path: instead of
+`import { RenderRadar } from '../src'` for the example, link the package locally
+(`npm pack` + install) or set metro `watchFolders: [path.resolve(__dirname, '..')]`.
 
-- [ ] **Step 4: Argent ile görsel doğrula**
+- [ ] **Step 4: Verify visually with Argent**
 
-Simülatörde örnek uygulamayı çalıştır; "Render tetikle"ye bas ve `Box`'ın
-flash'ladığını + rozetin arttığını gözle doğrula. (Argent MCP: list-devices →
+Run the example app in the simulator; press "Trigger render" and visually confirm
+that `Box` flashes + the badge increments. (Argent MCP: list-devices →
 boot → launch → discovery → gesture-tap → screenshot.)
 
-- [ ] **Step 5: GIF kaydet ve README'ye ekle**
+- [ ] **Step 5: Record a GIF and add it to the README**
 
-Ekran kaydından `docs/demo.gif` üret, README'deki yer tutucu yolu eşleşsin.
+Produce `docs/demo.gif` from the screen recording, matching the placeholder path in the README.
 
 - [ ] **Step 6: Commit**
 
 ```bash
 git add README.md example docs/demo.gif
-git commit -m "docs: README + Expo örnek app + demo GIF"
+git commit -m "docs: README + Expo example app + demo GIF"
 ```
 
 ---
 
-## Self-Review (yazım sonrası kontrol)
+## Self-Review (post-writing check)
 
 **Spec coverage:**
-- Çekirdek (useRenderTracker, store, isDev) → Task 2,3,4 ✔
-- 3 ağız: hook → Task 5, wrapper → Task 7, HOC → **Faz 2'ye ertelendi** (spec'te HOC Faz 2). ✔
+- Core (useRenderTracker, store, isDev) → Task 2,3,4 ✔
+- 3 mouths: hook → Task 5, wrapper → Task 7, HOC → **deferred to Phase 2** (HOC is Phase 2 in the spec). ✔
 - Flash border + badge → Task 6 ✔
-- Dev-only no-op → Task 4,5,7 testleriyle doğrulandı ✔
-- Ölçüm kirlenmemesi (araç izlenen component'i re-render etmez) → mimaride çözüldü: RenderRadarDev store'a abone DEĞİL; RadarOverlay abone ama izlenmiyor ✔
-- Animated (Reanimated değil) → Task 6 ✔
-- TS + builder-bob + Expo örnek + jest → Task 1, 8 ✔
-- "Neden" diff'i, panel, Provider → **Faz 2/3, kapsam dışı** ✔
+- Dev-only no-op → verified by Task 4,5,7 tests ✔
+- No measurement pollution (the tool does not re-render the tracked component) → solved in the architecture: RenderRadarDev does NOT subscribe to the store; RadarOverlay subscribes but is not tracked ✔
+- Animated (not Reanimated) → Task 6 ✔
+- TS + builder-bob + Expo example + jest → Task 1, 8 ✔
+- "Why" diff, panel, Provider → **Phase 2/3, out of scope** ✔
 
-**Placeholder taraması:** Kod adımları tam; tek bilinçli yer tutucu `docs/demo.gif` (Task 8'de üretilir). Spec'te "TBD" yok.
+**Placeholder scan:** The code steps are complete; the only deliberate placeholder is `docs/demo.gif` (produced in Task 8). No "TBD" in the spec.
 
-**Type consistency:** `record(id,name,now)`, `get(id)`, `subscribeId(id,cb)`, `useRenderTracker(name): string`, `useRenderRadar(name, {log?}): number`, `RadarOverlay({id,color})`, `RenderRadar({name,color?,children})`, `RenderStat{id,name,count,lastRenderAt}` — tüm task'larda tutarlı ✔
+**Type consistency:** `record(id,name,now)`, `get(id)`, `subscribeId(id,cb)`, `useRenderTracker(name): string`, `useRenderRadar(name, {log?}): number`, `RadarOverlay({id,color})`, `RenderRadar({name,color?,children})`, `RenderStat{id,name,count,lastRenderAt}` — consistent across all tasks ✔

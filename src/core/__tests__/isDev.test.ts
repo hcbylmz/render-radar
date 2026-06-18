@@ -5,12 +5,12 @@ describe('isDev', () => {
     (global as any).__DEV__ = true;
   });
 
-  it('__DEV__ true iken true döner', () => {
+  it('returns true when __DEV__ is true', () => {
     (global as any).__DEV__ = true;
     expect(isDev()).toBe(true);
   });
 
-  it('__DEV__ false iken false döner', () => {
+  it('returns false when __DEV__ is false', () => {
     (global as any).__DEV__ = false;
     expect(isDev()).toBe(false);
   });

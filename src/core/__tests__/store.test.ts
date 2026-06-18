@@ -1,13 +1,13 @@
 import { RenderStore } from '../store';
 
 describe('RenderStore', () => {
-  it('record her çağrıda count artırır', () => {
+  it('increments count on every record', () => {
     const s = new RenderStore();
     expect(s.record('a', 'A', 1).count).toBe(1);
     expect(s.record('a', 'A', 2).count).toBe(2);
   });
 
-  it('farklı idleri bağımsız sayar', () => {
+  it('counts different ids independently', () => {
     const s = new RenderStore();
     s.record('a', 'A', 1);
     s.record('b', 'B', 1);
@@ -16,14 +16,14 @@ describe('RenderStore', () => {
     expect(s.getAll()).toHaveLength(2);
   });
 
-  it('reset tüm statları temizler', () => {
+  it('reset clears all stats', () => {
     const s = new RenderStore();
     s.record('a', 'A', 1);
     s.reset();
     expect(s.getAll()).toHaveLength(0);
   });
 
-  it('subscribeId yalnızca ilgili id değişince tetiklenir', () => {
+  it('subscribeId fires only when the matching id changes', () => {
     const s = new RenderStore();
     const calls: string[] = [];
     s.subscribeId('a', () => calls.push('a'));
@@ -33,7 +33,7 @@ describe('RenderStore', () => {
     expect(calls).toEqual(['a']);
   });
 
-  it('subscribe her kayıtta tetiklenir ve unsubscribe çalışır', () => {
+  it('subscribe fires on every record and unsubscribe works', () => {
     const s = new RenderStore();
     let n = 0;
     const unsub = s.subscribe(() => {

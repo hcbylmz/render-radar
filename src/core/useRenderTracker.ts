@@ -12,8 +12,8 @@ export function useRenderTracker(name: string): string {
   }
   const id = idRef.current;
 
-  // Render'ı commit SONRASI kaydet — render sırasında store'u mutasyona uğratma.
-  // Bağımlılık dizisi yok: her commit sonrası çalışır.
+  // Record AFTER commit — never mutate the store during render.
+  // No dependency array: this runs after every commit.
   useEffect(() => {
     if (!isDev()) return;
     renderStore.record(id, name, Date.now());

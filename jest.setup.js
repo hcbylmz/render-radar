@@ -1,2 +1,2 @@
-// react-native preset, varsayılan olarak global.__DEV__ = true tanımlar.
-// Production no-op testleri tek tek global.__DEV__ değerini değiştirir.
+// The react-native preset defines global.__DEV__ = true by default.
+// Production no-op tests flip global.__DEV__ individually.

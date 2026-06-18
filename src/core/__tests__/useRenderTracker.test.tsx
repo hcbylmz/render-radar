@@ -15,14 +15,14 @@ describe('useRenderTracker', () => {
     (global as any).__DEV__ = true;
   });
 
-  it('her render için count artırır', () => {
+  it('increments count on every render', () => {
     const { rerender } = render(<Probe value={1} />);
     expect(renderStore.getAll()[0]?.count).toBe(1);
     rerender(<Probe value={2} />);
     expect(renderStore.getAll()[0]?.count).toBe(2);
   });
 
-  it('production modunda hiçbir şey kaydetmez', () => {
+  it('records nothing in production mode', () => {
     (global as any).__DEV__ = false;
     render(<Probe value={1} />);
     expect(renderStore.getAll()).toHaveLength(0);

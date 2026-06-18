@@ -8,13 +8,13 @@ describe('RadarOverlay', () => {
     renderStore.reset();
   });
 
-  it('store sayacını rozette gösterir', () => {
+  it('shows the store count in the badge', () => {
     renderStore.record('X#1', 'X', 1);
     const { getByTestId } = render(<RadarOverlay id="X#1" color="#ff0000" />);
     expect(getByTestId('render-radar-badge').props.children).toBe(1);
   });
 
-  it('id için stat yoksa 0 gösterir', () => {
+  it('shows 0 when there is no stat for the id', () => {
     const { getByTestId } = render(<RadarOverlay id="missing" color="#ff0000" />);
     expect(getByTestId('render-radar-badge').props.children).toBe(0);
   });

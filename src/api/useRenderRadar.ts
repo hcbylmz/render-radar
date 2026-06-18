@@ -2,12 +2,12 @@ import { useEffect, useRef } from 'react';
 import { useRenderTracker } from '../core/useRenderTracker';
 
 export function useRenderRadar(name: string, options?: { log?: boolean }): number {
-  // Store'a kaydet (panel/görsel katman bunu okur) — ama AŞAĞIDA store'a
-  // abone OLMUYORUZ. Aboneliğin tetiklediği yeniden render, useRenderTracker'ın
-  // tekrar kaydetmesine yol açar ve sonsuz döngü oluştururdu.
+  // Record to the store (the panel / visual layer reads this) — but we do NOT
+  // subscribe to the store below. A subscription-triggered re-render would make
+  // useRenderTracker record again, creating an infinite render loop.
   useRenderTracker(name);
 
-  // Bu render kaçıncı render? Yerel ref ile sayıyoruz; store'dan bağımsız.
+  // Which render number is this? Counted locally via a ref, independent of the store.
   const countRef = useRef(0);
   countRef.current += 1;
   const count = countRef.current;

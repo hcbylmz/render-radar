@@ -19,7 +19,7 @@
     "prepare": "bob build",
     "prepublishOnly": "jest && tsc --noEmit"
   },
-  "author": "Hicabi Yılmaz",
+  "author": "Hicabi Yilmaz",
   "keywords": [
     "react-native",
     "performance",

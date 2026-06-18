@@ -16,14 +16,14 @@ export default function App() {
   return (
     <SafeAreaView style={styles.screen}>
       <Text style={styles.title}>render-radar demo</Text>
-      <Text style={styles.subtitle}>Butona bas → kutu her render'da flash'lar</Text>
+      <Text style={styles.subtitle}>Tap the button → the box flashes on every render</Text>
 
       <Pressable style={styles.button} onPress={() => setCount((c) => c + 1)}>
-        <Text style={styles.buttonText}>Render tetikle ({count})</Text>
+        <Text style={styles.buttonText}>Trigger render ({count})</Text>
       </Pressable>
 
       <RenderRadar name="Box">
-        <Box label="İzleniyorum 👀" />
+        <Box label="I'm being watched 👀" />
       </RenderRadar>
     </SafeAreaView>
   );

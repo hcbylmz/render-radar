@@ -1,153 +1,153 @@
-# Render Radar — Tasarım Dokümanı
+# Render Radar — Design Document
 
-**Tarih:** 2026-06-18
-**Durum:** Onaylandı (tasarım), implementasyon planı bekliyor
-**Paket adı:** `render-radar` (npm'de boş — 2026-06-18 itibarıyla 404)
-
----
-
-## 1. Amaç
-
-React Native geliştiricilerinin **gereksiz yeniden render'ları (re-render) çıplak gözle görmesini** sağlayan, geliştirme-modu (dev-only) bir teşhis aracı. Bir component her render olduğunda kenarı flash'lar, bir sayaç gösterir ve (ileri fazlarda) render'ın **neden** olduğunu söyler.
-
-### Doldurduğu boşluk
-- Flipper artık deprecated.
-- React DevTools'un "highlight updates" özelliği RN'de hantal ve kurulumu zahmetli.
-- Hafif, sıfır-config, uygulama-içi (in-app) bir alternatif yok.
-
-### Hedef kitle
-Orta seviye RN geliştiricileri; performans/`memo`/`useCallback` davranışını gözle anlamak isteyenler.
-
-### Başarı kriterleri
-- `npm i -D render-radar` + tek satır kod ile çalışır.
-- Production'da **tamamen no-op** (sıfır runtime maliyeti, tree-shake edilebilir).
-- Aracın kendisi izlediği component'i yeniden render etmez (sayacı kirletmez).
-- Expo ve bare RN'de çalışır (saf JS, zorunlu native bağımlılık yok).
-- README'de bir GIF ile değeri 5 saniyede anlaşılır.
+**Date:** 2026-06-18
+**Status:** Approved (design), implementation plan pending
+**Package name:** `render-radar` (available on npm — 404 as of 2026-06-18)
 
 ---
 
-## 2. Mimari — "Tek beyin, üç ağız"
+## 1. Purpose
 
-Tüm public API'ler aynı çekirdeği kullanır.
+A development-mode (dev-only) diagnostic tool that lets React Native developers **see unnecessary re-renders with the naked eye**. Whenever a component renders, its border flashes, a counter is shown, and (in later phases) it tells you **why** the render happened.
 
-### 2.1 Çekirdek
+### The gap it fills
+- Flipper is now deprecated.
+- React DevTools' "highlight updates" feature is clunky in RN and tedious to set up.
+- There is no lightweight, zero-config, in-app alternative.
 
-**`useRenderTracker(name, props?)`** (dahili hook)
-- Her render'da `useRef` sayacını artırır.
-- Bir önceki prop'ları ref'te tutar; yeni prop'larla **shallow diff** alır → hangi key değişti, referans mı değişti.
-- Render olayını merkezi store'a yazar: `{ id, name, count, timestamp, changedKeys }`.
+### Target audience
+Intermediate RN developers; those who want to visually understand performance / `memo` / `useCallback` behavior.
 
-**Merkezi store (`store.ts`)** — hafif pub/sub
-- Stat'ları render döngüsünün dışında tutar.
-- Tüketiciler `useSyncExternalStore` ile abone olur.
-- **Kritik tasarım kuralı:** store güncellemesi, izlenen component'in yeniden render olmasına yol açMAMALI — aksi halde araç kendi ölçümünü bozar. Overlay ve panel store'a ayrı abone olur.
-
-**`isDev.ts`** — ortam kapısı
-- `__DEV__` false ise tüm public API'ler erken döner / sadece `children` render eder.
-
-### 2.2 Kullanım katmanları (üç ağız + provider)
-
-1. **Hook** — `useRenderRadar(name, props?)`: component içinden çağrılır. Çekirdeğin ince sarmalayıcısı.
-2. **Wrapper** — `<RenderRadar name="Card"><Card/></RenderRadar>`: children'ı sarar, otomatik flash + badge çizer.
-3. **HOC** — `withRenderRadar(Card, name?)`: kolaylık sarmalayıcısı (Faz 2).
-4. **Provider (Faz 3)** — `<RadarProvider>`: React'in `<Profiler>` API'si ile alt ağacı **otomatik** izler; aynı store'u besler.
-
-### 2.3 Görsel katman
-
-- **Flash border** — izlenen elemanın `onLayout` ile ölçülen çerçevesine absolute konumlu bir overlay View; render'da opacity/border animasyonu.
-- **Badge** — küçük sayaç pill'i (render sayısı).
-- **"Neden" ipucu (Faz 2)** — değişen prop key'lerini gösterir (örn. "`props.user` değişti — yeni referans").
-- **Hotspot paneli (Faz 3)** — sürüklenebilir kayan panel; en çok render olan component'leri sıralar; reset butonu.
-- **Animasyon adaptörü (`FlashDriver`)** — varsayılan dahili `Animated`; `react-native-reanimated` kuruluysa otomatik onu kullanır. İki sürücü de küçük bir ortak arayüzü uygular.
+### Success criteria
+- Works with `npm i -D render-radar` plus a single line of code.
+- **Completely no-op** in production (zero runtime cost, tree-shakeable).
+- The tool itself does not re-render the component it tracks (does not pollute the counter).
+- Works on Expo and bare RN (pure JS, no mandatory native dependency).
+- Its value is clear within 5 seconds via a GIF in the README.
 
 ---
 
-## 3. Veri akışı
+## 2. Architecture — "One brain, three mouths"
+
+All public APIs use the same core.
+
+### 2.1 Core
+
+**`useRenderTracker(name, props?)`** (internal hook)
+- Increments a `useRef` counter on every render.
+- Keeps the previous props in a ref; takes a **shallow diff** against the new props → which key changed, whether the reference changed.
+- Writes the render event to the central store: `{ id, name, count, timestamp, changedKeys }`.
+
+**Central store (`store.ts`)** — lightweight pub/sub
+- Keeps stats outside the render loop.
+- Consumers subscribe via `useSyncExternalStore`.
+- **Critical design rule:** a store update MUST NOT cause the tracked component to re-render — otherwise the tool corrupts its own measurement. The overlay and the panel subscribe to the store separately.
+
+**`isDev.ts`** — environment gate
+- When `__DEV__` is false, all public APIs return early / render only `children`.
+
+### 2.2 Usage layers (three mouths + provider)
+
+1. **Hook** — `useRenderRadar(name, props?)`: called from inside a component. A thin wrapper around the core.
+2. **Wrapper** — `<RenderRadar name="Card"><Card/></RenderRadar>`: wraps the children, automatically draws the flash + badge.
+3. **HOC** — `withRenderRadar(Card, name?)`: convenience wrapper (Phase 2).
+4. **Provider (Phase 3)** — `<RadarProvider>`: **automatically** tracks the subtree using React's `<Profiler>` API; feeds the same store.
+
+### 2.3 Visual layer
+
+- **Flash border** — an absolutely positioned overlay View around the frame of the tracked element measured via `onLayout`; opacity/border animation on render.
+- **Badge** — a small counter pill (render count).
+- **"Why" hint (Phase 2)** — shows the changed prop keys (e.g., "`props.user` changed — new reference").
+- **Hotspot panel (Phase 3)** — a draggable floating panel; ranks the most-rendered components; reset button.
+- **Animation adapter (`FlashDriver`)** — the default is the built-in `Animated`; if `react-native-reanimated` is installed it automatically uses that instead. Both drivers implement a small common interface.
+
+---
+
+## 3. Data flow
 
 ```
-render olur
-  → useRenderTracker: sayaç++ , prev/next prop diff
-  → store'a olay yazılır { id, name, count, changedKeys }
-  → (a) o id'ye abone FlashOverlay flash'lar + badge günceller
-  → (b) HotspotPanel tüm olaylara abone, sıralamayı tazeler
+a render happens
+  → useRenderTracker: counter++ , prev/next prop diff
+  → an event is written to the store { id, name, count, changedKeys }
+  → (a) the FlashOverlay subscribed to that id flashes + updates the badge
+  → (b) the HotspotPanel subscribed to all events refreshes the ranking
 ```
 
-Store güncellemesi izlenen component'i değil, yalnızca overlay/panel'i etkiler (external store sayesinde).
+A store update does not affect the tracked component, only the overlay/panel (thanks to the external store).
 
 ---
 
-## 4. Fazlama — her faz bağımsız yayınlanabilir
+## 4. Phasing — each phase can be released independently
 
-### Faz 1 — MVP (ilk npm sürümü)
-- Çekirdek: `useRenderTracker`, `store`, `isDev`.
+### Phase 1 — MVP (first npm release)
+- Core: `useRenderTracker`, `store`, `isDev`.
 - `useRenderRadar` hook + `<RenderRadar>` wrapper.
-- Flash border + count badge, **dahili Animated API** ile.
-- Dev-only no-op davranışı.
-- TypeScript tipleri.
-- Expo örnek app + README + GIF.
+- Flash border + count badge, using the **built-in Animated API**.
+- Dev-only no-op behavior.
+- TypeScript types.
+- Expo example app + README + GIF.
 
-### Faz 2 — "Neden"
-- Prop/state shallow diff → değişen key'lerin gösterimi.
+### Phase 2 — "Why"
+- Prop/state shallow diff → display of changed keys.
 - `withRenderRadar` HOC.
 
-### Faz 3 — Otomatik + panel
-- `<RadarProvider>` + React `<Profiler>` ile otomatik izleme.
-- Sürüklenebilir hotspot paneli (sıralı + reset).
-- Opsiyonel Reanimated `FlashDriver` adaptörü.
+### Phase 3 — Automatic + panel
+- `<RadarProvider>` + automatic tracking via React `<Profiler>`.
+- Draggable hotspot panel (sorted + reset).
+- Optional Reanimated `FlashDriver` adapter.
 
 ---
 
-## 5. Dosya yapısı (her dosya tek sorumluluk)
+## 5. File structure (each file has a single responsibility)
 
 ```
 src/
   core/
-    useRenderTracker.ts   # sayım + diff + raporlama
+    useRenderTracker.ts   # counting + diff + reporting
     store.ts              # pub/sub external store
-    isDev.ts              # ortam kapısı
+    isDev.ts              # environment gate
   api/
-    useRenderRadar.ts     # hook ağzı
-    RenderRadar.tsx       # wrapper ağzı
-    withRenderRadar.tsx   # HOC ağzı (Faz 2)
+    useRenderRadar.ts     # hook mouth
+    RenderRadar.tsx       # wrapper mouth
+    withRenderRadar.tsx   # HOC mouth (Phase 2)
   overlay/
-    FlashOverlay.tsx      # ölçüm + flash + badge
+    FlashOverlay.tsx      # measurement + flash + badge
     flashDriver/
-      animated.ts         # dahili Animated sürücüsü
-      reanimated.ts       # opsiyonel Reanimated sürücüsü (Faz 3)
+      animated.ts         # built-in Animated driver
+      reanimated.ts       # optional Reanimated driver (Phase 3)
   panel/
-    RadarProvider.tsx     # Profiler otomatik izleme (Faz 3)
-    HotspotPanel.tsx      # sıralı panel (Faz 3)
+    RadarProvider.tsx     # Profiler automatic tracking (Phase 3)
+    HotspotPanel.tsx      # sorted panel (Phase 3)
   index.ts
-example/                  # Expo uygulaması (manuel test + README GIF'i)
+example/                  # Expo application (manual testing + README GIF)
 ```
 
 ---
 
-## 6. Araçlar & test
+## 6. Tooling & testing
 
-- **Dil:** TypeScript.
-- **Build:** `react-native-builder-bob` (RN kütüphane standardı).
-- **Örnek app:** Expo (Expo + bare ikisinde de çalışır; saf JS).
-- **Testler (jest + @testing-library/react-native):**
-  - Çekirdek render sayımı doğru artıyor mu?
-  - Diff mantığı: değişen key'leri ve referans değişimini doğru tespit ediyor mu?
-  - `__DEV__ = false` iken tam no-op: hook hiçbir şey yapmaz, wrapper children'ı değiştirmeden render eder.
-  - Wrapper, sarılan ağacın çıktısını bozmaz.
-
----
-
-## 7. Kapsam dışı (YAGNI)
-
-- Zaman çizelgesi/timeline kaydı ve dışa aktarma.
-- Ağ/Redux/navigation entegrasyonu.
-- Web (react-native-web) desteği — ilk sürümde hedeflenmiyor.
-- Render *sebebinin* derin (deep) diff'i — yalnızca shallow diff.
+- **Language:** TypeScript.
+- **Build:** `react-native-builder-bob` (the RN library standard).
+- **Example app:** Expo (works on both Expo and bare; pure JS).
+- **Tests (jest + @testing-library/react-native):**
+  - Does the core render count increment correctly?
+  - Diff logic: does it correctly detect the changed keys and the reference change?
+  - Full no-op when `__DEV__ = false`: the hook does nothing, the wrapper renders the children unchanged.
+  - The wrapper does not break the output of the wrapped tree.
 
 ---
 
-## 8. Açık riskler / dikkat noktaları
+## 7. Out of scope (YAGNI)
 
-- **Ölçüm kirliliği:** Aracın kendi render'ı izlenen component'e sıçramamalı (external store ile çözülüyor).
-- **Layout ölçümü:** `onLayout` async; ilk flash bir frame gecikebilir — kabul edilebilir.
-- **Reanimated opsiyonelliği:** iki sürücüyü de bakımlı tutmak ek yük; bu yüzden Reanimated Faz 3'e ertelendi.
+- Timeline recording and export.
+- Network/Redux/navigation integration.
+- Web (react-native-web) support — not targeted in the first release.
+- Deep diff of the render *cause* — shallow diff only.
+
+---
+
+## 8. Open risks / things to watch
+
+- **Measurement pollution:** the tool's own render must not bleed into the tracked component (solved via the external store).
+- **Layout measurement:** `onLayout` is async; the first flash may be delayed by one frame — acceptable.
+- **Reanimated optionality:** keeping both drivers maintained is extra overhead; that's why Reanimated is deferred to Phase 3.

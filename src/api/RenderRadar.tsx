@@ -11,7 +11,7 @@ export type RenderRadarProps = {
 };
 
 export function RenderRadar({ name, color = '#ff3b30', children }: RenderRadarProps): JSX.Element {
-  // isDev() uygulama ömrü boyunca sabittir; bu dallanma hook sırasını bozmaz.
+  // isDev() is constant for the app's lifetime, so this branch never breaks hook order.
   if (!isDev()) {
     return <>{children}</>;
   }
@@ -31,12 +31,12 @@ function RenderRadarDev({
   color: string;
   children: React.ReactNode;
 }): JSX.Element {
-  // İzlenen taraf: kaydeder ama store'a abone DEĞİL.
+  // The tracked side: it records but does NOT subscribe to the store.
   const id = useRenderTracker(name);
   return (
     <View style={styles.container}>
       {children}
-      {/* Abone taraf: store'u dinler ama izlenmez → döngü yok. */}
+      {/* The subscriber side: listens to the store but is not tracked → no loop. */}
       <RadarOverlay id={id} color={color} />
     </View>
   );

@@ -15,14 +15,14 @@ describe('useRenderRadar', () => {
     (global as any).__DEV__ = true;
   });
 
-  it('render sayısını döner ve store günceller', () => {
+  it('returns the render count and updates the store', () => {
     const { getByTestId, rerender } = render(<Counter value={1} />);
     expect(getByTestId('count').props.children).toBe(1);
     rerender(<Counter value={2} />);
     expect(getByTestId('count').props.children).toBe(2);
   });
 
-  it('production modunda store boş kalır', () => {
+  it('keeps the store empty in production mode', () => {
     (global as any).__DEV__ = false;
     render(<Counter value={1} />);
     expect(renderStore.getAll()).toHaveLength(0);

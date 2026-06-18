@@ -1,5 +1,5 @@
-// React Native global'i __DEV__'i ve (RN dışı ortamlar için) process'i
-// ambient olarak bildiriyoruz; böylece @types/node bağımlılığı gerekmez.
+// Ambient-declare React Native's __DEV__ global and (for non-RN environments)
+// process, so we don't need an @types/node dependency.
 declare const __DEV__: boolean | undefined;
 declare const process: { env?: { NODE_ENV?: string } } | undefined;
 
